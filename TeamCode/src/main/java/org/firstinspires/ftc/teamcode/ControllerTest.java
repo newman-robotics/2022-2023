@@ -4,6 +4,10 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
 
+/*
+    @author Declan J. Scott
+*/
+
 @TeleOp
 public class ControllerTest extends LinearOpMode {
 
