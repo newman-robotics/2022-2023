@@ -30,7 +30,7 @@ class BaseComponent
     // Adds data to a components telemetry queue
     public void AddTelemetry(String key, String value)
     {
-        telemetryDict.put(key, value);
+        telemetryDict.put(ComponentID + ": " + key, value);
     }
 
     // Returns all telemetry
