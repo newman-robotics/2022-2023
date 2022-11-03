@@ -4,6 +4,10 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
+import java.util.AbstractQueue;
+import java.util.Enumeration;
+import java.util.Hashtable;
+import java.util.PriorityQueue;
 import java.util.Queue;
 
 /*
@@ -14,21 +18,23 @@ import java.util.Queue;
 class BaseComponent
 {
     private String ComponentID;
-    private Queue<String[]> telemetryDict;
+    private Hashtable<String, String> telemetryDict;
+
 
     // All components take in an ID for telemetry
     public BaseComponent(String componentID) {
         ComponentID = componentID;
+        telemetryDict = new Hashtable<>();
     }
 
     // Adds data to a components telemetry queue
     public void AddTelemetry(String key, String value)
     {
-        telemetryDict.add(new String[]{ComponentID + ": " + key, value});
+        telemetryDict.put(key, value);
     }
 
     // Returns all telemetry
-    public Queue<String[]> GetTelemetry()
+    public Hashtable<String, String> GetTelemetry()
     {
         return telemetryDict;
     }
@@ -73,7 +79,7 @@ public class RobotController extends LinearOpMode {
         waitForStart();
         while (opModeIsActive())
         {
-            linearSlide.Update(-gamepad1.right_stick_y);
+            linearSlide.Update(gamepad1.right_stick_y);
 
             // Report Telemetry
             ReportTelemetry(linearSlide.GetTelemetry());
@@ -82,11 +88,15 @@ public class RobotController extends LinearOpMode {
     }
 
     // Takes a components telemetry and reports it to the OpMode telemetry
-    public void ReportTelemetry(Queue<String[]> toReport)
+    public void ReportTelemetry(Hashtable<String, String> toReport)
     {
-        for (String[] data : toReport)
+        Enumeration telemetryKeys = toReport.keys();
+        while (telemetryKeys.hasMoreElements())
         {
-            telemetry.addData(data[0], data[1]);
+            String key = (String) telemetryKeys.nextElement();
+            String value = toReport.get(key);
+
+            telemetry.addData(key, value);
         }
     }
 }
