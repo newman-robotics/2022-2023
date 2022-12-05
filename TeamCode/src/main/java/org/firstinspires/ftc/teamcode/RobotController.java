@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Gamepad;
+import com.qualcomm.robotcore.hardware.Servo;
 
 import java.util.AbstractQueue;
 import java.util.Enumeration;
@@ -129,7 +130,7 @@ class MechanumWheelController extends BaseComponent
         // Get joystick direction
         double theta = MovementTheta(inputDevice);
 
-        currentSpeed = inputDevice.right_bumper ? initialSpeed * 2 : initialSpeed;
+        currentSpeed = inputDevice.right_bumper ? initialSpeed * 0.5f : initialSpeed;
 
         // control steering or driving
         if(!Double.isNaN(theta))
@@ -147,7 +148,7 @@ class MechanumWheelController extends BaseComponent
         }
     }
 
-    private void Drive(float theta)
+    public void Drive(float theta)
     {
         // Configure slant states
         // Right slant
@@ -192,7 +193,7 @@ class MechanumWheelController extends BaseComponent
         bottomRight.setPower(leftSlantPower);
     }
 
-    private void Steer(float theta)
+    public void Steer(float theta)
     {
         float leftWheelPower = 0;
         float rightWheelPower = 0;
@@ -213,15 +214,45 @@ class MechanumWheelController extends BaseComponent
     }
 }
 
+class Grabber extends BaseComponent
+{
+    private Servo lServo;
+    private Servo rServo;
+    private float maxServo = 0.5f;
+    private float lOffset;
+    private float rOffset;
+
+    public Grabber(String componentID, Servo lServo, Servo rServo, float l, float r) {
+        super(componentID);
+        this.lServo = lServo;
+        this.rServo = rServo;
+        lOffset = l;
+        rOffset = r;
+        this.rServo.setDirection(Servo.Direction.REVERSE);
+        this.lServo.setDirection(Servo.Direction.FORWARD);
+    }
+
+    public void Update(float input)
+    {
+        lServo.setPosition(Math.min(maxServo, input) + lOffset);
+        rServo.setPosition(Math.min(maxServo, input) + rOffset);
+
+        AddTelemetry("Left Grabber", String.valueOf(lServo.getPosition()));
+        AddTelemetry("Right Grabber", String.valueOf(rServo.getPosition()));
+        AddTelemetry("Raw Input", String.valueOf(input));
+    }
+}
+
 @TeleOp
 public class RobotController extends LinearOpMode {
 
     // Components
-    private LinearSlideController linearSlide;
-    private MechanumWheelController drivetrain;
+    protected LinearSlideController linearSlide;
+    protected MechanumWheelController drivetrain;
+    protected Grabber grabber;
 
-    @Override
-    public void runOpMode() {
+    public void getSubComponents()
+    {
         // Set up linear slide
         linearSlide = new LinearSlideController(hardwareMap.get(DcMotor.class, "slider"), 0.5f);
 
@@ -230,7 +261,17 @@ public class RobotController extends LinearOpMode {
         DcMotor topRight = hardwareMap.get(DcMotor.class, "rtMotor");
         DcMotor bottomLeft = hardwareMap.get(DcMotor.class, "lbMotor");
         DcMotor bottomRight = hardwareMap.get(DcMotor.class, "rbMotor");
-        MechanumWheelController drivetrain = new MechanumWheelController(topLeft, topRight, bottomLeft, bottomRight, 0.4f);
+        drivetrain = new MechanumWheelController(topLeft, topRight, bottomLeft, bottomRight, 0.4f);
+
+        // Set up grabber
+        Servo rGrabber = hardwareMap.get(Servo.class, "rGrabber");
+        Servo lGrabber = hardwareMap.get(Servo.class, "lGrabber");
+        grabber = new Grabber("Grabber", lGrabber, rGrabber, 0.65f, 0.35f);
+    }
+
+    @Override
+    public void runOpMode() {
+        getSubComponents();
 
         // Update initialization telemetry
         telemetry.addData("Status", "Initialized");
@@ -241,10 +282,12 @@ public class RobotController extends LinearOpMode {
         {
             linearSlide.Update(gamepad1.right_stick_y);
             drivetrain.Update(gamepad1);
+            grabber.Update(gamepad1.right_trigger);
 
             // Report Telemetry
             ReportTelemetry(linearSlide.GetTelemetry());
             ReportTelemetry(drivetrain.GetTelemetry());
+            ReportTelemetry(grabber.GetTelemetry());
             telemetry.update();
         }
     }
