@@ -4,13 +4,26 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Gamepad;
-import com.qualcomm.robotcore.hardware.Servo;
 
 import java.util.AbstractQueue;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.PriorityQueue;
 import java.util.Queue;
+import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.Deprecated;
+
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint;
+import org.opencv.imgproc.Imgproc;
+import org.opencv.core.Core;
+import org.opencv.videoio.VideoCapture;
+import org.opencv.core.CvType;
+import org.opencv.core.Scalar;
+import org.opencv.core.Point;
 
 /*
     @author Declan J. Scott
@@ -122,6 +135,7 @@ class MechanumWheelController extends BaseComponent
         }
 
         AddTelemetry("Theta", String.valueOf(theta));
+	//theta = -theta //A possible fix to the mirroring problem
         return theta;
     }
 
@@ -130,7 +144,7 @@ class MechanumWheelController extends BaseComponent
         // Get joystick direction
         double theta = MovementTheta(inputDevice);
 
-        currentSpeed = inputDevice.right_bumper ? initialSpeed * 0.5f : initialSpeed;
+        currentSpeed = inputDevice.right_bumper ? initialSpeed * 2 : initialSpeed;
 
         // control steering or driving
         if(!Double.isNaN(theta))
@@ -148,7 +162,7 @@ class MechanumWheelController extends BaseComponent
         }
     }
 
-    public void Drive(float theta)
+    private void Drive(float theta)
     {
         // Configure slant states
         // Right slant
@@ -193,7 +207,7 @@ class MechanumWheelController extends BaseComponent
         bottomRight.setPower(leftSlantPower);
     }
 
-    public void Steer(float theta)
+    private void Steer(float theta)
     {
         float leftWheelPower = 0;
         float rightWheelPower = 0;
@@ -214,45 +228,14 @@ class MechanumWheelController extends BaseComponent
     }
 }
 
-class Grabber extends BaseComponent
-{
-    private Servo lServo;
-    private Servo rServo;
-    private float maxServo = 0.5f;
-    private float lOffset;
-    private float rOffset;
-
-    public Grabber(String componentID, Servo lServo, Servo rServo, float l, float r) {
-        super(componentID);
-        this.lServo = lServo;
-        this.rServo = rServo;
-        lOffset = l;
-        rOffset = r;
-        this.rServo.setDirection(Servo.Direction.REVERSE);
-        this.lServo.setDirection(Servo.Direction.FORWARD);
-    }
-
-    public void Update(float input)
-    {
-        lServo.setPosition(Math.min(maxServo, input) + lOffset);
-        rServo.setPosition(Math.min(maxServo, input) + rOffset);
-
-        AddTelemetry("Left Grabber", String.valueOf(lServo.getPosition()));
-        AddTelemetry("Right Grabber", String.valueOf(rServo.getPosition()));
-        AddTelemetry("Raw Input", String.valueOf(input));
-    }
-}
-
 @TeleOp
 public class RobotController extends LinearOpMode {
 
     // Components
-    protected LinearSlideController linearSlide;
-    protected MechanumWheelController drivetrain;
-    protected Grabber grabber;
-
-    public void getSubComponents()
-    {
+    private LinearSlideController linearSlide;
+    private MechanumWheelController drivetrain;
+    @Override
+    public void runOpMode() {
         // Set up linear slide
         linearSlide = new LinearSlideController(hardwareMap.get(DcMotor.class, "slider"), 0.5f);
 
@@ -261,17 +244,7 @@ public class RobotController extends LinearOpMode {
         DcMotor topRight = hardwareMap.get(DcMotor.class, "rtMotor");
         DcMotor bottomLeft = hardwareMap.get(DcMotor.class, "lbMotor");
         DcMotor bottomRight = hardwareMap.get(DcMotor.class, "rbMotor");
-        drivetrain = new MechanumWheelController(topLeft, topRight, bottomLeft, bottomRight, 0.4f);
-
-        // Set up grabber
-        Servo rGrabber = hardwareMap.get(Servo.class, "rGrabber");
-        Servo lGrabber = hardwareMap.get(Servo.class, "lGrabber");
-        grabber = new Grabber("Grabber", lGrabber, rGrabber, 0.65f, 0.35f);
-    }
-
-    @Override
-    public void runOpMode() {
-        getSubComponents();
+        MechanumWheelController drivetrain = new MechanumWheelController(topLeft, topRight, bottomLeft, bottomRight, 0.4f);
 
         // Update initialization telemetry
         telemetry.addData("Status", "Initialized");
@@ -282,12 +255,10 @@ public class RobotController extends LinearOpMode {
         {
             linearSlide.Update(gamepad1.right_stick_y);
             drivetrain.Update(gamepad1);
-            grabber.Update(gamepad1.right_trigger);
 
             // Report Telemetry
             ReportTelemetry(linearSlide.GetTelemetry());
             ReportTelemetry(drivetrain.GetTelemetry());
-            ReportTelemetry(grabber.GetTelemetry());
             telemetry.update();
         }
     }
@@ -304,4 +275,209 @@ public class RobotController extends LinearOpMode {
             telemetry.addData(key, value);
         }
     }
+}
+
+//Everything past this point is pure theory
+//None of it is actually implemented
+//You tell me if it'll actually work
+
+//Not that the contents of this class are
+//particularly important, but I'll try
+//to document them
+public class AutonomousImageProcessing {
+	VideoCapture camera;
+	//Always call when creating a new AutonomousImageProcessing
+	//to establish a camera connection
+	public void bindCamera(VideoCapture incamera){
+		camera = incamera;
+	}
+	//If a camera is bound, returns the current frame 
+	//represented by the camera
+	//TODO: Calibrate the camera somehow
+    //(if it's not already calibrated)
+	private Optional<Mat> getCameraImage() {
+		Mat image = new Mat();
+		if (camera.isOpened()) {
+			//Oops, someone forgot to bind the camera
+			return Optional.of(camera.read(image));
+		}
+		return Optional.empty();
+	}
+	//Searches for the signal sleeve and returns the
+	//ID of the found signal area
+	//(1 for right, 2 for centre, 3 for left)
+	public Optional<byte> getSignalSleeveOrientation() {
+	    Optional<Mat> frame = getCameraImage();
+	    if (!frame.isPresent) {
+		//Oops, someone forgot to bind the camera
+	        return Optional.empty();
+	    }
+	    Mat fg = frame.copy();
+	    //This is all improv; no guarantee it'll work
+	    byte[] foundColours = new byte[(int) (fg.total())]
+	    byte[] fgData = new byte[(int) (fg.total() * fg.channels())];
+	    fg.get(0, 0, fgData);
+	    //Iterates over every pixel in fg, searching
+	    //for a pixel whose RGB channels roughly 
+	    //match what we're expecting
+	    //TODO: These need to be filled in later
+	    //1 is to left
+	    //2 is centred
+	    //3 is to right
+	    byte optimalB1 = 0;
+	    byte optimalB2 = 0;
+	    byte optimalB3 = 0;
+	    byte optimalG1 = 0;
+	    byte optimalG2 = 0;
+	    byte optimalG3 = 0;
+	    byte optimalR1 = 0;
+	    byte optimalR2 = 0;
+	    byte optimalR3 = 0;
+	    //This is the amount by which we allow the
+	    //RGB values of the pixels to stray from 
+	    //what we're expecting
+	    //TODO: Configure it
+	    byte allowedThreshold = 5;
+	    //If any pixels look right, mark them
+	    for (int i = 0; i < (fgData.size() / 3); i++) {
+	    	//I compressed a bunch of conditionals into one here,
+	    	//so sorry for the poor readability
+	    	if ((fgData[i * 3 + 0] == optimalB1 &&
+	    		fgData[i * 3 + 1] == optimalG1 &&
+	    		fgData[i * 3 + 2] == optimalR1) ||
+	    					(
+	    							((fgData[i * 3 + 0] < optimalB1 &&
+	    							fgData[i * 3 + 0] + allowedThreshold > optimalB1) ||
+	    							(fgData[i * 3 + 0] > optimalB1 &&
+	    							fgData[i * 3 + 0] - allowedThreshold < optimalB1)) 
+	    					&&
+	    							((fgData[i * 3 + 1] < optimalG1 &&
+	    							fgData[i * 3 + 1] + allowedThreshold > optimalG1) ||
+	    							(fgData[i * 3 + 1] > optimalG1 &&
+	    							fgData[i * 3 + 1] - allowedThreshold < optimalG1))
+	    					&&
+	    							((fgData[i * 3 + 2] < optimalR1 &&
+	    							fgData[i * 3 + 2] + allowedThreshold > optimalR1) ||
+	    							(fgData[i * 3 + 2] > optimalR1 &&
+	    							fgData[i * 3 + 2] + allowedThreshold > optimalR1))) {
+	    		foundColours(i) = 1;
+	    	}
+	    	if ((fgData[i * 3 + 0] == optimalB2 &&
+	        		fgData[i * 3 + 1] == optimalG2 &&
+	        		fgData[i * 3 + 2] == optimalR2) ||
+	        					(
+	        							((fgData[i * 3 + 0] < optimalB2 &&
+	        							fgData[i * 3 + 0] + allowedThreshold > optimalB2) ||
+	        							(fgData[i * 3 + 0] > optimalB2 &&
+	        							fgData[i * 3 + 0] - allowedThreshold < optimalB2)) 
+	        					&&
+	        							((fgData[i * 3 + 1] < optimalG2 &&
+	        							fgData[i * 3 + 1] + allowedThreshold > optimalG2) ||
+	        							(fgData[i * 3 + 1] > optimalG2 &&
+	        							fgData[i * 3 + 1] - allowedThreshold < optimalG2))
+	        					&&
+	        							((fgData[i * 3 + 2] < optimalR2 &&
+	        							fgData[i * 3 + 2] + allowedThreshold > optimalR2) ||
+	        							(fgData[i * 3 + 2] > optimalR2 &&
+	        							fgData[i * 3 + 2] + allowedThreshold > optimalR2))) {
+	        		foundColours(i) = 2;
+	        }
+		    if ((fgData[i * 3 + 0] == optimalB3 &&
+		    		fgData[i * 3 + 1] == optimalG3 &&
+		    		fgData[i * 3 + 2] == optimalR3) ||
+		    					(
+		    							((fgData[i * 3 + 0] < optimalB3 &&
+		    							fgData[i * 3 + 0] + allowedThreshold > optimalB3) ||
+		    							(fgData[i * 3 + 0] > optimalB3 &&
+		    							fgData[i * 3 + 0] - allowedThreshold < optimalB3)) 
+		    					&&
+		    							((fgData[i * 3 + 1] < optimalG3 &&
+		    							fgData[i * 3 + 1] + allowedThreshold > optimalG3) ||
+		    							(fgData[i * 3 + 1] > optimalG3 &&
+		    							fgData[i * 3 + 1] - allowedThreshold < optimalG3))
+		    					&&
+		    							((fgData[i * 3 + 2] < optimalR3 &&
+		    							fgData[i * 3 + 2] + allowedThreshold > optimalR3) ||
+		    							(fgData[i * 3 + 2] > optimalR3 &&
+		    							fgData[i * 3 + 2] + allowedThreshold > optimalR3))) {
+		    		foundColours(i) = 3;
+		    	}
+	    	}
+	    	//Looks for the best candidate
+	    	//for a signal sleeve
+	    	//By that I mean figures out which
+	    	//colour appears the most
+	    	//This makes me wish we were using Python
+	    	int colour1 = 0;
+	    	int colour2 = 0;
+	    	int colour3 = 0;
+	    	for (int i = 0; i > colour1.size(); i++) {
+	    		if (foundColours(i) == 1) {
+	    			colour1++
+	    		}
+	    		if (foundColours(i) == 2) {
+	    			colour2++
+	    		}
+	    		if (foundColours(i) == 3) {
+	    			colour3++
+	    		}
+	    	}
+	    	if (colour1 > colour2 && colour1 > colour3) {
+	    		return Optional.of(1);
+	    	}
+	    	if (colour2 > colour1 && colour2 > colour3) {
+	    		return Optional.of(2)
+	    	}
+	    	if (colour3 > colour1 && colour3 > colour2) {
+	    		return Optional.of(3)
+	    	}
+	    	return Optional.empty();
+		}
+	}
+
+//My best effort, but I don't really know what I'm doing
+//I also have to completely redo everything, since your
+//drivers were written for tele-op
+public class AutonomousDriver {
+    AutonomousImageProcessor sleeve;
+    DcMotor ul;
+    DcMotor ur;
+    DcMotor bl;
+    DcMotor br;
+    private void init() {
+        ul = hardwareMap.get(DcMotor.class, "ltMotor");
+        ur  = hardwareMap.get(DcMotor.class, "rtMotor");
+        bl = hardwareMap.get(DcMotor.class, "lbMotor");
+		br = hardwareMap.get(DcMotor.class, "rbMotor");
+		sleeve = new AutonomousImageProcessor();
+		sleeve.bind(new VideoCapture(0));
+		//TODO: I don't think 0 is the right camera
+		//for the setup we're using
+    }
+    //I have no idea how to do thist, but I'm trying
+    //This should only run once
+    public void run() {
+		byte zone = sleeve.getSignalSleeveOrientation();
+		//TODO: Put in the powers for all of the setPower methods
+		//Adjust for zone
+		//Move left
+		if (zone == 0) {
+		    ul.setPower();
+		    ur.setPower();
+		    bl.setPower();
+		    br.setPower();
+		}
+		//Move right
+		if (zone == 2) {
+		    ul.setPower();
+		    ur.setPower();
+		    bl.setPower();
+		    br.setPower();
+		}
+		//Move the robot forward
+		ul.setPower();
+		ur.setPower();
+		bl.setPower();
+		br.setPower();
+	    }
 }
