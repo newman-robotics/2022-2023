@@ -15,6 +15,7 @@ import java.util.Optional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.Thread;
 
 import org.opencv.core.Mat;
 import org.opencv.videoio.VideoCapture;
@@ -320,6 +321,14 @@ public class RobotController extends LinearOpMode {
 //Not that the contents of this class are
 //particularly important, but I'll try
 //to document them
+
+public static enum Heights {
+	float cone = 12.7;
+	float postSmall = 33.7;
+	float postMedium = 59.0;
+	float postLarge = 82.2;
+}
+
 public class AutonomousImageProcessing {
 	VideoCapture camera;
 	//Always call when creating a new AutonomousImageProcessing
@@ -457,6 +466,7 @@ public class AutonomousImageProcessing {
 	    			colour3++
 	    		}
 	    	}
+	    	//Again, bad, but it should work
 	    	if (colour1 > colour2 && colour1 > colour3) {
 	    		return Optional.of(1);
 	    	}
@@ -490,30 +500,41 @@ public class AutonomousDriver {
 		//for the setup we're using
     }
     //I have no idea how to do this, but I'm trying
-    //This should only run once
-    public void run() {
+    public void runOpMode() {
 		Optional<byte> zone = sleeve.getSignalSleeveOrientation();
 		//TODO: Put in the powers for all of the setPower methods
+		//and fix tileTime
+		int tileTime = 1; //This is the time in seconds for the
+						  //robot to traverse one tile
+		float speed = 0.6;
 		//Adjust for zone
 		//Move left
 		if (zone.isPresent()) {
 		if (zone == 0) {
-		    ul.setPower();
-		    ur.setPower();
-		    bl.setPower();
-		    br.setPower();
+		    ul.setPower(-speed);
+		    ur.setPower(speed);
+		    bl.setPower(speed);
+		    br.setPower(-speed);
 		}
 		//Move right
 		if (zone == 2) {
-		    ul.setPower();
-		    ur.setPower();
-		    bl.setPower();
-		    br.setPower();
+		    ul.setPower(speed);
+		    ur.setPower(-speed);
+		    bl.setPower(-speed);
+		    br.setPower(speed);
 		}
+		Thread.currentThread().sleep(tileTime * 1000);
 		//Move the robot forward
-		ul.setPower();
-		ur.setPower();
-		bl.setPower();
-		br.setPower();
-	    }}
+		ul.setPower(speed);
+		ur.setPower(speed);
+		bl.setPower(speed);
+		br.setPower(speed);
+		Thread.currentThread().sleep(tileTime * 1000);
+		//Stop the robot and end
+		ul.setPower(0);
+		ur.setPower(0);
+		bl.setPower(0);
+		br.setPower(0);
+	    }
+	}
 }
