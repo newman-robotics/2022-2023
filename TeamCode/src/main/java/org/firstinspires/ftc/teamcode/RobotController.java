@@ -6,6 +6,8 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.Servo;
 
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+
 import java.util.AbstractQueue;
 import java.util.Enumeration;
 import java.util.Hashtable;
@@ -317,19 +319,12 @@ public class RobotController extends LinearOpMode {
 //Everything past this point is pure theory
 //None of it is actually implemented
 //You tell me if it'll actually work
+//Maybe I should sync Git after all
 
 //Not that the contents of this class are
 //particularly important, but I'll try
 //to document them
-
-public static enum Heights {
-	float cone = 12.7;
-	float postSmall = 33.7;
-	float postMedium = 59.0;
-	float postLarge = 82.2;
-}
-
-public class AutonomousImageProcessing {
+public class AutonomousImageProcessor {
 	VideoCapture camera;
 	//Always call when creating a new AutonomousImageProcessing
 	//to establish a camera connection
@@ -452,6 +447,7 @@ public class AutonomousImageProcessing {
 	    	//By that I mean figures out which colour appears the most
 	    	//Yes, it's very rudimentary, but if we pick a colour such as green, orange, or magenta
 	    	//that isn't likely to appear anywhere else, and then make our system appear vibrant
+	    	//What am I saying?
 	    	int colour1 = 0;
 	    	int colour2 = 0;
 	    	int colour3 = 0;
@@ -495,17 +491,16 @@ public class AutonomousDriver {
         bl = hardwareMap.get(DcMotor.class, "lbMotor");
 		br = hardwareMap.get(DcMotor.class, "rbMotor");
 		sleeve = new AutonomousImageProcessor();
-		sleeve.bind(new VideoCapture(0));
+		sleeve.bind(new VideoCapture(WebcamName.class);
 		//TODO: I don't think 0 is the right camera
 		//for the setup we're using
     }
     //I have no idea how to do this, but I'm trying
     public void runOpMode() {
 		Optional<byte> zone = sleeve.getSignalSleeveOrientation();
-		//TODO: Put in the powers for all of the setPower methods
-		//and fix tileTime
-		int tileTime = 1; //This is the time in seconds for the
-						  //robot to traverse one tile
+		//TODO: Fix tileTime
+		int tileTime = 1; //This is the time in seconds for the robot to traverse one tile
+						  //using a speed of 0.6
 		float speed = 0.6;
 		//Adjust for zone
 		//Move left
@@ -523,6 +518,7 @@ public class AutonomousDriver {
 		    bl.setPower(-speed);
 		    br.setPower(speed);
 		}
+		//It's Thread.currentThread().sleep(), right?
 		Thread.currentThread().sleep(tileTime * 1000);
 		//Move the robot forward
 		ul.setPower(speed);
@@ -530,7 +526,7 @@ public class AutonomousDriver {
 		bl.setPower(speed);
 		br.setPower(speed);
 		Thread.currentThread().sleep(tileTime * 1000);
-		//Stop the robot and end
+		//Park the robot
 		ul.setPower(0);
 		ur.setPower(0);
 		bl.setPower(0);
