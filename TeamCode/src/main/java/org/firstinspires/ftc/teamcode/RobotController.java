@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -16,7 +17,6 @@ import java.util.Queue;
 import java.util.Optional;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.Thread;
 
 import org.opencv.core.Mat;
@@ -130,6 +130,8 @@ class MechanumWheelController extends BaseComponent
         }else{
             theta = additionalAngle;
         }
+
+	theta = (theta + 180) % 360; //Rotate 180 degrees
 
         AddTelemetry("Theta", String.valueOf(theta));
         return theta;
@@ -333,8 +335,6 @@ public class AutonomousImageProcessor {
 	}
 	//If a camera is bound, returns the current frame 
 	//represented by the camera
-	//TODO: Calibrate the camera somehow
-    //(if it's not already calibrated)
 	private Optional<Mat> getCameraImage() {
 		Mat image = new Mat();
 		if (camera.isOpened()) {
@@ -346,6 +346,7 @@ public class AutonomousImageProcessor {
 	//Searches for the signal sleeve and returns the
 	//ID of the found signal area
 	//(1 for left, 2 for centre, 3 for right)
+        //Incredibly lazy, but if we pick vibrant colours, we'll be fine
 	public Optional<byte> getSignalSleeveOrientation() {
 	    Optional<Mat> frame = getCameraImage();
 	    if (!frame.isPresent) {
@@ -444,10 +445,7 @@ public class AutonomousImageProcessor {
 		    	}
 	    	}
 	    	//Looks for the best candidate for a signal sleeve
-	    	//By that I mean figures out which colour appears the most
-	    	//Yes, it's very rudimentary, but if we pick a colour such as green, orange, or magenta
-	    	//that isn't likely to appear anywhere else, and then make our system appear vibrant
-	    	//What am I saying?
+	    	//By that I mean figures out which colour appears the mos
 	    	int colour1 = 0;
 	    	int colour2 = 0;
 	    	int colour3 = 0;
@@ -479,7 +477,8 @@ public class AutonomousImageProcessor {
 //My best effort, but I don't really know what I'm doing
 //I also have to completely redo everything, since your
 //drivers were written for tele-op
-public class AutonomousDriver {
+@Autonomous(name="Autonomous Alpha")
+public class AutonomousDriver extends LinearOpMode{
     AutonomousImageProcessor sleeve;
     DcMotor ul;
     DcMotor ur;
@@ -490,10 +489,9 @@ public class AutonomousDriver {
         ur  = hardwareMap.get(DcMotor.class, "rtMotor");
         bl = hardwareMap.get(DcMotor.class, "lbMotor");
 		br = hardwareMap.get(DcMotor.class, "rbMotor");
-		sleeve = new AutonomousImageProcessor();
-		sleeve.bind(new VideoCapture(WebcamName.class);
-		//TODO: I don't think 0 is the right camera
-		//for the setup we're using
+		sleeve = new AutonomousImageProcessor().bind(new VideoCapture(WebcamName.class);
+		//TODO: I don't think WebcamName.class returns
+			    //a camera that will be accepted by OpenCV
     }
     //I have no idea how to do this, but I'm trying
     public void runOpMode() {
@@ -502,9 +500,12 @@ public class AutonomousDriver {
 		int tileTime = 1; //This is the time in seconds for the robot to traverse one tile
 						  //using a speed of 0.6
 		float speed = 0.6;
-		//Adjust for zone
+		//Does nothing if we can't find
+		//the sleeve
+		if (!zone.isPresent()) {
+		    return;
+		}
 		//Move left
-		if (zone.isPresent()) {
 		if (zone == 0) {
 		    ul.setPower(-speed);
 		    ur.setPower(speed);
@@ -531,6 +532,5 @@ public class AutonomousDriver {
 		ur.setPower(0);
 		bl.setPower(0);
 		br.setPower(0);
-	    }
 	}
 }
