@@ -6,11 +6,8 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.Servo;
 
-import java.util.AbstractQueue;
 import java.util.Enumeration;
 import java.util.Hashtable;
-import java.util.PriorityQueue;
-import java.util.Queue;
 
 /*
     @author Declan J. Scott
@@ -47,19 +44,85 @@ class LinearSlideController extends BaseComponent
 {
     private DcMotor slideMotor;
     private float speed;
+    private int startCounts = 0;
+
+    // Stages
+    private float[] heights = {
+            0.00f, // Bottom
+            0.35f, // Smallest
+            0.60f, // Middle
+            0.85f // Tallest
+    };
+    private int targetHeightIndex = 0;
+    private boolean isMoving = false;
+    private double pulleyCircumference = 0.112;
+    private double countsPerRev = 537.7;
 
     // Constructor
     public LinearSlideController(DcMotor slideMotor, float speed) {
         super("LINEAR_SLIDE");
         this.slideMotor = slideMotor;
         this.speed = speed;
+        startCounts = slideMotor.getCurrentPosition();
     }
 
     // Takes in Gamepad input
-    public void Update(float input)
+    public void Update(Gamepad inputDevice)
     {
-        slideMotor.setPower(input * speed);
-        AddTelemetry("Power", String.valueOf(slideMotor.getPower()));
+        AddTelemetry("IS MOVING: ", String.valueOf(isMoving));
+        if (!isMoving)
+        {
+            // Check for move input
+            if (inputDevice.dpad_up)
+            {
+                StartMove(3);
+            }else if (inputDevice.dpad_left)
+            {
+                StartMove(2);
+            }else if (inputDevice.dpad_right)
+            {
+                StartMove(1);
+            }else if (inputDevice.dpad_down)
+            {
+                StartMove(0);
+            }
+        }else{
+            // Move (up is negative with motor setup)
+            double targetHeight = heights[targetHeightIndex];
+            double difference = targetHeight - CurrentPosition();
+            AddTelemetry("TARGET HEIGHT: ", String.valueOf(targetHeight));
+            AddTelemetry("TARGET DIFFERENCE: ", String.valueOf(difference));
+            AddTelemetry("CURRENT POSITION: ", String.valueOf(CurrentPosition()));
+
+            // Check if we're close enough
+            if (Math.abs(difference) < 0.05f)
+            {
+                slideMotor.setPower(0);
+                isMoving = false;
+                return;
+            }
+
+            // Move
+            if (difference > 0)
+            {
+                slideMotor.setPower(-speed); // Move UP
+            }else{
+                slideMotor.setPower(speed); // Move DOWN
+            }
+            AddTelemetry("MOTOR POWER: ", String.valueOf(slideMotor.getPower()));
+        }
+    }
+
+    public void StartMove(int target)
+    {
+        AddTelemetry("TARGET INDEX", String.valueOf(target));
+        targetHeightIndex = target;
+        isMoving = true;
+    }
+
+    public double CurrentPosition()
+    {
+        return -RobotController.countsToMeters(slideMotor.getCurrentPosition() - startCounts, countsPerRev, pulleyCircumference);
     }
 }
 
@@ -254,7 +317,7 @@ public class RobotController extends LinearOpMode {
     public void getSubComponents()
     {
         // Set up linear slide
-        linearSlide = new LinearSlideController(hardwareMap.get(DcMotor.class, "slider"), 0.5f);
+        linearSlide = new LinearSlideController(hardwareMap.get(DcMotor.class, "slider"), 0.8f);
 
         // Set up drivetrain
         DcMotor topLeft = hardwareMap.get(DcMotor.class, "ltMotor");
@@ -269,6 +332,13 @@ public class RobotController extends LinearOpMode {
         grabber = new Grabber("Grabber", lGrabber, rGrabber, 0.65f, 0.35f);
     }
 
+    // Converts motor counts to meters travelled
+    public static double countsToMeters(int counts, double countsPerRev, double circumference)
+    {
+        double countsPerMeters = countsPerRev / circumference;
+        return counts / countsPerMeters;
+    }
+
     @Override
     public void runOpMode() {
         getSubComponents();
@@ -280,9 +350,9 @@ public class RobotController extends LinearOpMode {
         waitForStart();
         while (opModeIsActive())
         {
-            linearSlide.Update(gamepad1.right_stick_y);
+            linearSlide.Update(gamepad2);
             drivetrain.Update(gamepad1);
-            grabber.Update(gamepad1.right_trigger);
+            grabber.Update(gamepad2.right_trigger);
 
             // Report Telemetry
             ReportTelemetry(linearSlide.GetTelemetry());

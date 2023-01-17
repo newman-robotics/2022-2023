@@ -75,7 +75,7 @@ import java.util.List;
  * is explained below.
  */
 
-@TeleOp(name="Vuforia Field Nav Webcam", group ="Sample Concept")
+@TeleOp(name="Vuforia Field Nav Webcam", group ="Test")
 public class ConceptVuforiaFieldNavigationWebcam extends LinearOpMode {
 
     /*
