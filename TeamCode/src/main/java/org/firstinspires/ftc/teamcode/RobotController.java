@@ -48,13 +48,12 @@ class LinearSlideController extends BaseComponent
 
     // Stages
     private float[] heights = {
-            0.00f, // Bottom
+            0.00f, // Bottom (SHOULD BE DONE WITH A LIMIT SWITCH WHEN THAT'S INSTALLED)
             0.35f, // Smallest
             0.60f, // Middle
             0.85f // Tallest
     };
     private int targetHeightIndex = 0;
-    private boolean isMoving = false;
     private double pulleyCircumference = 0.112;
     private double countsPerRev = 537.7;
 
@@ -69,55 +68,49 @@ class LinearSlideController extends BaseComponent
     // Takes in Gamepad input
     public void Update(Gamepad inputDevice)
     {
-        AddTelemetry("IS MOVING: ", String.valueOf(isMoving));
-        if (!isMoving)
+        // Check for move input
+        if (inputDevice.dpad_up)
         {
-            // Check for move input
-            if (inputDevice.dpad_up)
-            {
-                StartMove(3);
-            }else if (inputDevice.dpad_left)
-            {
-                StartMove(2);
-            }else if (inputDevice.dpad_right)
-            {
-                StartMove(1);
-            }else if (inputDevice.dpad_down)
-            {
-                StartMove(0);
-            }
-        }else{
-            // Move (up is negative with motor setup)
-            double targetHeight = heights[targetHeightIndex];
-            double difference = targetHeight - CurrentPosition();
-            AddTelemetry("TARGET HEIGHT: ", String.valueOf(targetHeight));
-            AddTelemetry("TARGET DIFFERENCE: ", String.valueOf(difference));
-            AddTelemetry("CURRENT POSITION: ", String.valueOf(CurrentPosition()));
-
-            // Check if we're close enough
-            if (Math.abs(difference) < 0.05f)
-            {
-                slideMotor.setPower(0);
-                isMoving = false;
-                return;
-            }
-
-            // Move
-            if (difference > 0)
-            {
-                slideMotor.setPower(-speed); // Move UP
-            }else{
-                slideMotor.setPower(speed); // Move DOWN
-            }
-            AddTelemetry("MOTOR POWER: ", String.valueOf(slideMotor.getPower()));
+            StartMove(3);
+        }else if (inputDevice.dpad_left)
+        {
+            StartMove(2);
+        }else if (inputDevice.dpad_right)
+        {
+            StartMove(1);
+        }else if (inputDevice.dpad_down)
+        {
+            StartMove(0);
         }
+
+        // Move (up is negative with motor setup)
+        double targetHeight = heights[targetHeightIndex];
+        double difference = targetHeight - CurrentPosition();
+        AddTelemetry("TARGET HEIGHT: ", String.valueOf(targetHeight));
+        AddTelemetry("TARGET DIFFERENCE: ", String.valueOf(difference));
+        AddTelemetry("CURRENT POSITION: ", String.valueOf(CurrentPosition()));
+
+        // Check if we're close enough to start feedback loop
+        float targetPower = speed;
+        if (Math.abs(difference) < 0.05f)
+        {
+            targetPower *= 0.1f;
+        }
+
+        // Move
+        if (difference > 0)
+        {
+            slideMotor.setPower(-targetPower); // Move UP
+        }else{
+            slideMotor.setPower(targetPower); // Move DOWN
+        }
+        AddTelemetry("MOTOR POWER: ", String.valueOf(slideMotor.getPower()));
     }
 
     public void StartMove(int target)
     {
         AddTelemetry("TARGET INDEX", String.valueOf(target));
         targetHeightIndex = target;
-        isMoving = true;
     }
 
     public double CurrentPosition()
