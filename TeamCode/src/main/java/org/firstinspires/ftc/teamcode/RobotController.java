@@ -50,8 +50,8 @@ class LinearSlideController extends BaseComponent
     private float[] heights = {
             0.00f, // Bottom (SHOULD BE DONE WITH A LIMIT SWITCH WHEN THAT'S INSTALLED)
             0.35f, // Smallest
-            0.60f, // Middle
-            0.85f // Tallest
+            0.65f, // Middle
+            0.90f // Tallest
     };
     private int targetHeightIndex = 0;
     private double pulleyCircumference = 0.112;
@@ -85,6 +85,12 @@ class LinearSlideController extends BaseComponent
 
         // Move (up is negative with motor setup)
         double targetHeight = heights[targetHeightIndex];
+
+        // Add joystick offset
+        double joystickOffsetFactor = 0.1f;
+        double joystickOffset = inputDevice.right_stick_y * joystickOffsetFactor;
+        targetHeight += joystickOffset;
+
         double difference = targetHeight - CurrentPosition();
         AddTelemetry("TARGET HEIGHT: ", String.valueOf(targetHeight));
         AddTelemetry("TARGET DIFFERENCE: ", String.valueOf(difference));
