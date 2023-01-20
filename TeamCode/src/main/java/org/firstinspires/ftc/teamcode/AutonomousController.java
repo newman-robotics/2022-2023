@@ -49,15 +49,15 @@ public class AutonomousImageProcessor {
 	    //1 is to left
 	    //2 is centred
 	    //3 is to right
-	    byte optimalB1 = 0;
-	    byte optimalB2 = 0;
-	    byte optimalB3 = 0;
-	    byte optimalG1 = 0;
-	    byte optimalG2 = 0;
-	    byte optimalG3 = 0;
-	    byte optimalR1 = 0;
-	    byte optimalR2 = 0;
-	    byte optimalR3 = 0;
+	    byte optimalR1 = 80;
+	    byte optimalG1 = 149;
+	    byte optimalB1 = 100;
+	    byte optimalR2 = 226;
+	    byte optimalG2 = 101;
+	    byte optimalB2 = 135;
+	    byte optimalR3 = 77;
+	    byte optimalG3 = 153;
+	    byte optimalB3 = 159;
 	    //This is the amount by which we allow the
 	    //RGB values of the pixels to stray from 
 	    //what we're expecting
