@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.hardware.rev.RevTouchSensor;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -43,6 +44,7 @@ class BaseComponent
 class LinearSlideController extends BaseComponent
 {
     private DcMotor slideMotor;
+    private RevTouchSensor touch;
     private float speed;
     private int startCounts = 0;
 
@@ -57,17 +59,33 @@ class LinearSlideController extends BaseComponent
     private double pulleyCircumference = 0.112;
     private double countsPerRev = 537.7;
 
+    private boolean initializedAtBottom = false;
+
     // Constructor
-    public LinearSlideController(DcMotor slideMotor, float speed) {
+    public LinearSlideController(DcMotor slideMotor, RevTouchSensor touch, float speed) {
         super("LINEAR_SLIDE");
         this.slideMotor = slideMotor;
         this.speed = speed;
-        startCounts = slideMotor.getCurrentPosition();
+        this.touch = touch;
     }
 
     // Takes in Gamepad input
     public void Update(Gamepad inputDevice)
     {
+        if (!initializedAtBottom)
+        {
+            AddTelemetry("Slide Status: ", "Initializing");
+            slideMotor.setPower(1);
+
+            if (touch.isPressed())
+            {
+                startCounts = slideMotor.getCurrentPosition();
+                initializedAtBottom = true;
+                AddTelemetry("Slide Status: ", "Ready");
+            }
+            return;
+        }
+
         // Check for move input
         if (inputDevice.dpad_up)
         {
@@ -88,7 +106,7 @@ class LinearSlideController extends BaseComponent
 
         // Add joystick offset
         double joystickOffsetFactor = 0.1f;
-        double joystickOffset = inputDevice.right_stick_y * joystickOffsetFactor;
+        double joystickOffset = -inputDevice.right_stick_y * joystickOffsetFactor;
         targetHeight += joystickOffset;
 
         double difference = targetHeight - CurrentPosition();
@@ -316,7 +334,7 @@ public class RobotController extends LinearOpMode {
     public void getSubComponents()
     {
         // Set up linear slide
-        linearSlide = new LinearSlideController(hardwareMap.get(DcMotor.class, "slider"), 0.8f);
+        linearSlide = new LinearSlideController(hardwareMap.get(DcMotor.class, "slider"), hardwareMap.get(RevTouchSensor.class, "slideTouch"), 0.8f);
 
         // Set up drivetrain
         DcMotor topLeft = hardwareMap.get(DcMotor.class, "ltMotor");
