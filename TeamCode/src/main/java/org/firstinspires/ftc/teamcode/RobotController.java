@@ -268,8 +268,8 @@ class MechanumWheelController extends BaseComponent
 
         // Set power
         topRight.setPower(rightSlantPower);
-        bottomLeft.setPower(-rightSlantPower);
-        topLeft.setPower(-leftSlantPower);
+        bottomLeft.setPower(rightSlantPower);
+        topLeft.setPower(leftSlantPower);
         bottomRight.setPower(leftSlantPower);
     }
 
@@ -287,10 +287,10 @@ class MechanumWheelController extends BaseComponent
         }
 
         // Set Power
-        bottomLeft.setPower(-leftWheelPower);
+        bottomLeft.setPower(leftWheelPower);
         topRight.setPower(rightWheelPower);
         bottomRight.setPower(rightWheelPower);
-        topLeft.setPower(-leftWheelPower);
+        topLeft.setPower(leftWheelPower);
     }
 }
 
