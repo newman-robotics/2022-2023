@@ -232,17 +232,17 @@ class MechanumWheelController extends BaseComponent
     {
         // Configure slant states
         // Right slant
-        if(theta >= 85 && theta <= 185)
+        if(theta >= 80 && theta <= 190)
             rightSlantState = MotorState.FORWARD;
-        else if(theta >= 265 && theta <= 360)
+        else if(theta >= 260 && theta <= 360)
             rightSlantState = MotorState.BACKWARD;
         else
             rightSlantState = MotorState.DISABLED;
 
         // Left slant
-        if(theta >= 0 && theta <= 95)
+        if(theta >= 0 && theta <= 100)
             leftSlantState = MotorState.FORWARD;
-        else if(theta >= 175 && theta <= 275)
+        else if(theta >= 170 && theta <= 280)
             leftSlantState = MotorState.BACKWARD;
         else
             leftSlantState = MotorState.DISABLED;
