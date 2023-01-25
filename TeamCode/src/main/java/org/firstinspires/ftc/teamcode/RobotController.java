@@ -210,7 +210,11 @@ class MechanumWheelController extends BaseComponent
         // Get joystick direction
         double theta = MovementTheta(inputDevice);
 
-        currentSpeed = inputDevice.right_bumper ? initialSpeed * 0.5f : initialSpeed;
+        currentSpeed = inputDevice.right_bumper ? initialSpeed * 0.5f : initialSpeed; // Slow Mode
+
+        // Fast mode when threshold is broken
+        if (inputDevice.right_trigger >= 0.25f)
+            currentSpeed = initialSpeed * (1 + inputDevice.right_trigger);
 
         // control steering or driving
         if(!Double.isNaN(theta))
