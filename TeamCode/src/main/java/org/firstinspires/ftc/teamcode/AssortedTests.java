@@ -4,22 +4,8 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
-import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.teamcode.RobotController;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
-
-import java.util.Thread;
-
-@TeleOp(name="CameraTest",group="Tests")
-public class CameraTest extends LinearOpMode {
-    @Override
-    public void runOpMode() {
-        AutonomousImageProcessor processor = new AutonomousImageProcessor(WebcamName.class);
-        zone = processor.getSignalSleeveOrientation;
-        telemetry.addData("zone: ",zone);
-        return;
-    }
-}
 
 @TeleOp(name="MotorTest",group="Tests")
 public class MotorTest extends LinearOpMode {
