@@ -51,14 +51,17 @@ public class CameraTest_Color extends LinearOpMode {
             /*
              * Send some stats to the telemetry
              */
-            telemetry.addData("Detected Color", pipeline.GetFace());
-            telemetry.update();
 
-            // Handle stopping
             if (gamepad1.a)
             {
-                cam.stopStreaming();
+                telemetry.addData("Detected Color", pipeline.GetFace());
+                telemetry.addData("RED: ", pipeline.colorTotals.get("RED"));
+                telemetry.addData("GREEN: ", pipeline.colorTotals.get("GREEN"));
+                telemetry.addData("BLUE: ", pipeline.colorTotals.get("BLUE"));
             }
+
+
+            telemetry.update();
         }
     }
 }

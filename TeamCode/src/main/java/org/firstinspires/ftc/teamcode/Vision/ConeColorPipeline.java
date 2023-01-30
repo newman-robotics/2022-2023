@@ -11,10 +11,13 @@ import java.util.Hashtable;
 
 public class ConeColorPipeline extends OpenCvPipeline {
 
-    private Hashtable<String, Double> colorTotals = new Hashtable<>();
+    public Hashtable<String, Double> colorTotals = new Hashtable<>();
+    private Mat currentVisual;
 
     public String GetFace()
     {
+        processCurrent();
+
         // Iterative search for highest value
         double highestValue = 0;
         String highestName = "";
@@ -38,6 +41,16 @@ public class ConeColorPipeline extends OpenCvPipeline {
     @Override
     public Mat processFrame(Mat input)
     {
+        currentVisual = input;
+        return input;
+    }
+
+    public void processCurrent()
+    {
+        Mat input = currentVisual;
+
+        // Need to zoom in for better accuracy and speed (win win)
+
         // Reset sums
         colorTotals.clear();
         colorTotals.put("RED", (double) 0);
@@ -45,11 +58,12 @@ public class ConeColorPipeline extends OpenCvPipeline {
         colorTotals.put("BLUE", (double) 0);
 
         // Get split channels
-        ArrayList<Mat> RGBChannels = new ArrayList<>();
-        Core.split(input, RGBChannels);
-        Mat red = RGBChannels.get(0);
-        Mat green = RGBChannels.get(1);
-        Mat blue = RGBChannels.get(2);
+        Mat red = new Mat();
+        Core.extractChannel(input, red, 0);
+        Mat green = new Mat();
+        Core.extractChannel(input, green, 1);
+        Mat blue = new Mat();
+        Core.extractChannel(input, blue, 2);
 
         // Threshold each channel
         red = thresholdChannel(red);
@@ -65,31 +79,17 @@ public class ConeColorPipeline extends OpenCvPipeline {
                 double blueAmount = blue.get(y, x)[0];
 
                 // Add to totals
-                colorTotals.put("RED", colorTotals.get("RED") + greenAmount);
+                colorTotals.put("RED", colorTotals.get("RED") + redAmount);
                 colorTotals.put("GREEN", colorTotals.get("GREEN") + greenAmount);
-                colorTotals.put("BLUE", colorTotals.get("BLUE") + greenAmount);
+                colorTotals.put("BLUE", colorTotals.get("BLUE") + blueAmount);
             }
         }
-
-        // Check which color prevails
-        switch (GetFace())
-        {
-            case "RED":
-                return red;
-            case "GREEN":
-                return green;
-            case "BLUE":
-                return blue;
-        }
-
-        // Unreachable technically
-        return input;
     }
 
     public Mat thresholdChannel(Mat input)
     {
         Mat threshold = new Mat();
-        Imgproc.threshold(input, threshold, 230, 255, Imgproc.THRESH_BINARY);
+        Imgproc.threshold(input, threshold, 130, 255, Imgproc.THRESH_BINARY);
         return threshold;
     }
 }
