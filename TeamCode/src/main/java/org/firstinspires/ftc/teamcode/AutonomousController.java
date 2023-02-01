@@ -74,7 +74,7 @@ public class AutonomousDriver extends LinearOpMode{
 		bl.setPower(0);
 		br.setPower(0);
 	}
-	private class AutonomousImageProcessor {
+	public class AutonomousImageProcessor {
 		VideoCapture camera;
 		public AutonomousImageProcessor(VideoCapture camera){
 			this.camera = camera;
