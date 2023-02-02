@@ -2,6 +2,8 @@ package org.firstinspires.ftc.teamcode.Vision;
 
 import org.opencv.core.Mat;
 import org.opencv.core.Core;
+import org.opencv.core.Point;
+import org.opencv.core.Rect;
 import org.opencv.imgproc.Imgproc;
 import org.openftc.easyopencv.OpenCvPipeline;
 
@@ -50,6 +52,10 @@ public class ConeColorPipeline extends OpenCvPipeline {
         Mat input = currentVisual;
 
         // Need to zoom in for better accuracy and speed (win win)
+        Point corner1 = new Point();
+        Point corner2 = new Point();
+        Rect rectCrop = new Rect((int) corner1.x, (int) corner1.y, (int) (corner2.x-corner1.x+1), (int) (corner2.y-corner1.y+1));
+        input = input.submat(rectCrop);
 
         // Reset sums
         colorTotals.clear();
