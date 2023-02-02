@@ -147,7 +147,7 @@ class LinearSlideController extends BaseComponent
 class MechanumWheelController extends BaseComponent
 {
     private DcMotor topLeft;
-    private DcMotor topRight;
+    protected DcMotor topRight; // HAS ENCODER
     private DcMotor bottomLeft;
     private DcMotor bottomRight;
     private float initialSpeed;
