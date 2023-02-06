@@ -51,11 +51,11 @@ class LinearSlideController extends BaseComponent
     // Stages
     private float[] heights = {
             0.00f, // Bottom (SHOULD BE DONE WITH A LIMIT SWITCH WHEN THAT'S INSTALLED)
-            0.35f, // Smallest
-            0.65f, // Middle
-            0.90f // Tallest
+            0.40f, // Smallest
+            0.70f, // Middle
+            0.95f // Tallest
     };
-    private int targetHeightIndex = 0;
+    private float targetHeight = heights[0];
     private double pulleyCircumference = 0.112;
     private double countsPerRev = 537.7;
 
@@ -101,8 +101,6 @@ class LinearSlideController extends BaseComponent
             StartMove(0);
         }
 
-        // Move (up is negative with motor setup)
-        double targetHeight = heights[targetHeightIndex];
 
         // Add joystick offset
         double joystickOffsetFactor = 0.1f;
@@ -134,7 +132,7 @@ class LinearSlideController extends BaseComponent
     public void StartMove(int target)
     {
         AddTelemetry("TARGET INDEX", String.valueOf(target));
-        targetHeightIndex = target;
+        targetHeight = heights[target];
     }
 
     public double CurrentPosition()
@@ -211,7 +209,7 @@ class MechanumWheelController extends BaseComponent
         // Get joystick direction
         double theta = MovementTheta(inputDevice);
 
-        currentSpeed = inputDevice.right_bumper ? initialSpeed * 0.5f : initialSpeed; // Slow Mode
+        currentSpeed = inputDevice.right_bumper ? initialSpeed * 0.65f : initialSpeed; // Slow Mode
 
         // Fast mode when threshold is broken
         if (inputDevice.right_trigger >= 0.25f)
