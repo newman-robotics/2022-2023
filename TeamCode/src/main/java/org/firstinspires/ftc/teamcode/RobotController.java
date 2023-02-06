@@ -160,6 +160,7 @@ class MechanumWheelController extends BaseComponent
         this.bottomLeft = bottomLeft;
         this.bottomRight = bottomRight;
         this.initialSpeed = speed;
+        currentSpeed = speed;
     }
 
     // Motor states
@@ -224,12 +225,17 @@ class MechanumWheelController extends BaseComponent
             else
                 Drive((float) theta);
         }else{
-            // Reset power to 0
-            topRight.setPower(0);
-            bottomLeft.setPower(0);
-            topLeft.setPower(0);
-            bottomRight.setPower(0);
+            Reset();
         }
+    }
+
+    public void Reset()
+    {
+        // Reset power to 0
+        topRight.setPower(0);
+        bottomLeft.setPower(0);
+        topLeft.setPower(0);
+        bottomRight.setPower(0);
     }
 
     public void Drive(float theta)

@@ -9,6 +9,12 @@ import java.util.ArrayList;
 
 public class BFS {
 
+    private static char[] blacklist = {
+            's',
+            'm',
+            'l'
+    };
+
     public static Coordinate[] FindPath(char[][] field, Coordinate start, Coordinate end)
     {
         ArrayList<Coordinate> searched = new ArrayList<>(); // Blacklist of coordinates that have already been searched
@@ -62,6 +68,13 @@ public class BFS {
                             break;
                         }
                     }
+                    for (Character blacklisted : blacklist)
+                    {
+                        if (field[neighbor.y][neighbor.x] == blacklisted) {
+                            beenSearched = true;
+                            break;
+                        }
+                    }
 
                     // Add to the queue
                     if(!beenSearched)
@@ -69,10 +82,10 @@ public class BFS {
                         neighbor.parent = activeNode; // Setup parent
                         searchQueue.add(neighbor);
                     }
-
-                    // Add active node to searched list
-                    searched.add(activeNode);
                 }
+
+                // Add active node to searched list
+                searched.add(activeNode);
             }
         }
         // All nodes have been searched without finding the end. No path exists

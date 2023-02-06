@@ -1,0 +1,29 @@
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.hardware.bosch.BNO055IMU;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+
+@Autonomous
+public class IMUTest extends RobotController {
+
+    private BNO055IMU imu;
+
+    @Override
+    public void runOpMode() {
+        imu = hardwareMap.get(BNO055IMU.class, "imu");
+        telemetry.addData("Status: ", "Received IMU");
+        telemetry.update();
+        BNO055IMU.Parameters initParam = new BNO055IMU.Parameters();
+        initParam.angleUnit = BNO055IMU.AngleUnit.RADIANS;
+        imu.initialize(initParam);
+        telemetry.addData("Status: ", "Initialized IMU");
+        telemetry.update();
+        getSubComponents();
+        waitForStart();
+        while (opModeIsActive())
+        {
+            telemetry.addData("ANGULAR VELOCITY: ", imu.getAngularVelocity());
+            telemetry.update();
+        }
+    }
+}
