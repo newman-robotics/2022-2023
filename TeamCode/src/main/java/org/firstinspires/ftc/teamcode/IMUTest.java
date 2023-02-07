@@ -23,6 +23,9 @@ public class IMUTest extends RobotController {
         while (opModeIsActive())
         {
             telemetry.addData("ANGULAR VELOCITY: ", imu.getAngularVelocity());
+            telemetry.addData("ACCELERATION: ", imu.getAcceleration());
+            telemetry.addData("LINEAR ACCELERATION: ", imu.getLinearAcceleration());
+            telemetry.addData("VELOCITY: ", imu.getVelocity());
             telemetry.update();
         }
     }

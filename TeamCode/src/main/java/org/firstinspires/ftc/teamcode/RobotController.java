@@ -105,10 +105,10 @@ class LinearSlideController extends BaseComponent
         // Add joystick offset
         double joystickOffsetFactor = 0.1f;
         double joystickOffset = -inputDevice.right_stick_y * joystickOffsetFactor;
-        targetHeight += joystickOffset;
+        double offsetTargetHeight = targetHeight + joystickOffset;
 
-        double difference = targetHeight - CurrentPosition();
-        AddTelemetry("TARGET HEIGHT: ", String.valueOf(targetHeight));
+        double difference = offsetTargetHeight - CurrentPosition();
+        AddTelemetry("TARGET HEIGHT: ", String.valueOf(offsetTargetHeight));
         AddTelemetry("TARGET DIFFERENCE: ", String.valueOf(difference));
         AddTelemetry("CURRENT POSITION: ", String.valueOf(CurrentPosition()));
 
@@ -150,6 +150,7 @@ class MechanumWheelController extends BaseComponent
     private DcMotor bottomRight;
     private float initialSpeed;
     private float currentSpeed;
+    private float brakeForce = 0.25f;
 
     public MechanumWheelController(DcMotor topLeft, DcMotor topRight, DcMotor bottomLeft, DcMotor bottomRight, float speed) {
         super("DRIVETRAIN");
@@ -215,7 +216,7 @@ class MechanumWheelController extends BaseComponent
         if (inputDevice.right_trigger >= 0.25f)
             currentSpeed = initialSpeed * (1 + inputDevice.right_trigger);
 
-        // control steering or driving
+        // control steering or driving or breaking
         if(!Double.isNaN(theta))
         {
             if(inputDevice.left_bumper)
@@ -225,6 +226,17 @@ class MechanumWheelController extends BaseComponent
         }else{
             Reset();
         }
+
+        boolean braking = false;
+        while (inputDevice.left_trigger > 0.8f)
+        {
+            braking = true;
+            currentSpeed = brakeForce;
+            Drive((float) (360 - theta));
+        }
+
+        if (braking)
+            Reset();
     }
 
     public void Reset()

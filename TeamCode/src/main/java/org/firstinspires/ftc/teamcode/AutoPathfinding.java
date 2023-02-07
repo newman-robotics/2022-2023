@@ -15,7 +15,7 @@ import org.firstinspires.ftc.teamcode.Pathfinding.FieldContainer;
 @Autonomous
 public class AutoPathfinding extends RobotController {
 
-    private double distanceBetweenPoints = 0.3048f; // in meters
+    private double distanceBetweenPoints = 0.29f; // in meters
     private double countsPerRev = 537.7;
     private double wheelCircumference = 0.301593;
     private double robotCircumference = 1.28;
@@ -144,7 +144,7 @@ public class AutoPathfinding extends RobotController {
     public void Pivot(float theta)
     {
         // Configure variables needed
-        double radTheta = theta * (Math.PI / 180);
+        double radTheta = Math.abs(theta) * (Math.PI / 180);
         double startTime = super.time;
         float steerDirectionInput = theta > 0 ? 0 : 90;
 
