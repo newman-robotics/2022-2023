@@ -1,3 +1,6 @@
+This is how the field is read from within the robot.
+You can change stuff here, it has no importance within the code.
+
 ----c-c----
 -g-s-g-s-g-
 .-u-----u-.

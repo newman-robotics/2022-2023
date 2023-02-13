@@ -6,6 +6,8 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.TouchSensor;
+import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigurationType;
 
 import java.util.Enumeration;
 import java.util.Hashtable;
@@ -101,7 +103,6 @@ class LinearSlideController extends BaseComponent
             StartMove(0);
         }
 
-
         // Add joystick offset
         double joystickOffsetFactor = 0.1f;
         double joystickOffset = -inputDevice.right_stick_y * joystickOffsetFactor;
@@ -155,9 +156,13 @@ class MechanumWheelController extends BaseComponent
     public MechanumWheelController(DcMotor topLeft, DcMotor topRight, DcMotor bottomLeft, DcMotor bottomRight, float speed) {
         super("DRIVETRAIN");
         this.topLeft = topLeft;
+        topLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         this.topRight = topRight;
+        topRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         this.bottomLeft = bottomLeft;
+        bottomLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         this.bottomRight = bottomRight;
+        bottomRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         this.initialSpeed = speed;
         currentSpeed = speed;
     }
@@ -226,17 +231,6 @@ class MechanumWheelController extends BaseComponent
         }else{
             Reset();
         }
-
-        boolean braking = false;
-        while (inputDevice.left_trigger > 0.8f)
-        {
-            braking = true;
-            currentSpeed = brakeForce;
-            Drive((float) (360 - theta));
-        }
-
-        if (braking)
-            Reset();
     }
 
     public void Reset()
@@ -318,14 +312,16 @@ class Grabber extends BaseComponent
 {
     private Servo lServo;
     private Servo rServo;
+    private TouchSensor topTouch;
     private float maxServo = 0.5f;
     private float lOffset;
     private float rOffset;
 
-    public Grabber(String componentID, Servo lServo, Servo rServo, float l, float r) {
+    public Grabber(String componentID, Servo lServo, Servo rServo, TouchSensor topTouch, float l, float r) {
         super(componentID);
         this.lServo = lServo;
         this.rServo = rServo;
+        this.topTouch = topTouch;
         lOffset = l;
         rOffset = r;
         this.rServo.setDirection(Servo.Direction.REVERSE);
@@ -366,7 +362,8 @@ public class RobotController extends LinearOpMode {
         // Set up grabber
         Servo rGrabber = hardwareMap.get(Servo.class, "rGrabber");
         Servo lGrabber = hardwareMap.get(Servo.class, "lGrabber");
-        grabber = new Grabber("Grabber", lGrabber, rGrabber, 0.65f, 0.35f);
+        TouchSensor topTouch = hardwareMap.get(TouchSensor.class, "topTouch");
+        grabber = new Grabber("Grabber", lGrabber, rGrabber, topTouch,0.65f, 0.35f);
     }
 
     // Converts motor counts to meters travelled

@@ -3,23 +3,52 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
-import org.firstinspires.ftc.teamcode.DSYS.*;
 import org.firstinspires.ftc.teamcode.Pathfinding.BFS;
 import org.firstinspires.ftc.teamcode.Pathfinding.Coordinate;
 import org.firstinspires.ftc.teamcode.Pathfinding.FieldContainer;
+import org.opencv.core.Mat;
 
 /*
 @author Declan J. Scott
  */
 
+class SpeedCalibration{
+    private double startTime;
+    private double speed;
+    private boolean calibrated = false;
+
+    public SpeedCalibration(double startTime) {
+        this.startTime = startTime;
+    }
+
+    public void End(float time, float distance)
+    {
+        calibrated = true;
+        speed = Math.abs(distance / (time - startTime));
+    }
+
+    public double getSpeed()
+    {
+        return speed;
+    }
+
+    public boolean isCalibrated()
+    {
+        return calibrated;
+    }
+}
+
 @Autonomous
 public class AutoPathfinding extends RobotController {
 
-    private double distanceBetweenPoints = 0.29f; // in meters
+    private double distanceBetweenPoints = 0.3048f; // in meters
     private double countsPerRev = 537.7;
     private double wheelCircumference = 0.301593;
-    private double robotCircumference = 1.28;
     private BNO055IMU gyro;
+
+    // Speed calibrations for moving/pivoting
+    private SpeedCalibration moveSpeed; // m/s
+    private SpeedCalibration pivotSpeed; // rad/s
 
     private enum DIRECTIONS{
         UP,
@@ -70,6 +99,7 @@ public class AutoPathfinding extends RobotController {
         return angVel * t;
     }
 
+    double estimatedTime;
     @Override
     public void runOpMode()
     {
@@ -85,14 +115,21 @@ public class AutoPathfinding extends RobotController {
 
         waitForStart();
 
+        // Calibration path
         Coordinate[] path = BFS.FindPath(field, currentPos, new Coordinate(0, 4));
         MovePath(path);
+
+        Coordinate[] timedPath = BFS.FindPath(field, new Coordinate(0, 4), new Coordinate(10, 4));
+        estimatedTime = EstimateTime(timedPath);
+        MovePath(timedPath);
     }
 
     void MovePath(Coordinate[] path)
     {
         for (int i = 1; i < path.length; i++)
         {
+            telemetry.addData("Estimated Time: ", estimatedTime);
+
             String pathReport = "";
             for (Coordinate c : path)
             {
@@ -127,22 +164,45 @@ public class AutoPathfinding extends RobotController {
             telemetry.update();
             Pivot(thetaToTravel);
 
-            // Move a node's distance for 1 node
-            double startingDistance = countsToMeters(drivetrain.topRight.getCurrentPosition(), countsPerRev, wheelCircumference);
-            while (countsToMeters(drivetrain.topRight.getCurrentPosition(), countsPerRev, wheelCircumference) - startingDistance <= distanceBetweenPoints)
-            {
-                drivetrain.Drive(90);
-            }
+            // Move
+            Move1Node();
 
             // Stop moving and set new current position
-            drivetrain.Reset();
             currentPos = nextCoordinate;
             facingDirection = nextDirection;
         }
     }
 
+    public void Move1Node()
+    {
+        // Check for calibration data
+        if (moveSpeed == null)
+        {
+            moveSpeed = new SpeedCalibration((float) super.time);
+        }
+
+        // Move a node's distance for 1 node
+        double startingDistance = countsToMeters(drivetrain.topRight.getCurrentPosition(), countsPerRev, wheelCircumference);
+        while (countsToMeters(drivetrain.topRight.getCurrentPosition(), countsPerRev, wheelCircumference) - startingDistance <= distanceBetweenPoints)
+        {
+            drivetrain.Drive(90);
+        }
+
+        // Calibrate
+        if (!moveSpeed.isCalibrated())
+        {
+            moveSpeed.End((float) super.time, (float) distanceBetweenPoints);
+        }
+    }
+
     public void Pivot(float theta)
     {
+        // Check for calibration data
+        if (pivotSpeed == null)
+        {
+            pivotSpeed = new SpeedCalibration((float) super.time);
+        }
+
         // Configure variables needed
         double radTheta = Math.abs(theta) * (Math.PI / 180);
         double startTime = super.time;
@@ -152,6 +212,58 @@ public class AutoPathfinding extends RobotController {
         {
             drivetrain.Steer(steerDirectionInput);
         }
-        drivetrain.Reset();
+
+        // Calibrate
+        if (!pivotSpeed.isCalibrated())
+        {
+            pivotSpeed.End((float) super.time, (float) radTheta);
+        }
+    }
+
+    // Returns an approximation of how long a path will take assuming calibration data exists
+    public double EstimateTime(Coordinate[] path)
+    {
+        if (moveSpeed == null || !moveSpeed.isCalibrated())
+            return 0;
+        if (pivotSpeed == null || !pivotSpeed.isCalibrated())
+            return 0;
+
+        // Find all nodes where pivoting is necessary
+        int pivotCount = 0;
+        DIRECTIONS currentDir = facingDirection;
+        for (int i = 0; i < path.length-1; i++)
+        {
+            Coordinate current = path[i];
+            Coordinate next = path[i+1];
+
+            DIRECTIONS requiredDirection = currentDir;
+            if (current.y > next.y)
+            {
+                requiredDirection = DIRECTIONS.UP;
+            }else if (current.y < next.y)
+            {
+                requiredDirection = DIRECTIONS.DOWN;
+            }else if (current.x < next.x)
+            {
+                requiredDirection = DIRECTIONS.RIGHT;
+            }else if (current.x > next.x)
+            {
+                requiredDirection = DIRECTIONS.LEFT;
+            }
+
+            if (requiredDirection != currentDir)
+            {
+                pivotCount++;
+            }
+
+            currentDir = requiredDirection;
+        }
+
+        double singlePivotTime = (pivotSpeed.getSpeed() * (Math.PI / 2));
+        double totalPivotTime = pivotCount * singlePivotTime;
+        double singleMoveTime = moveSpeed.getSpeed() * distanceBetweenPoints;
+        double totalMoveTime = singleMoveTime * (path.length - 1);
+
+        return totalPivotTime + totalMoveTime;
     }
 }
