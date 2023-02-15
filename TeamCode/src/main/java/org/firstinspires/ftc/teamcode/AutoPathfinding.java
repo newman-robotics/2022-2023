@@ -182,8 +182,8 @@ public class AutoPathfinding extends RobotController {
         }
 
         // Move a node's distance for 1 node
-        double startingDistance = countsToMeters(drivetrain.topRight.getCurrentPosition(), countsPerRev, wheelCircumference);
-        while (countsToMeters(drivetrain.topRight.getCurrentPosition(), countsPerRev, wheelCircumference) - startingDistance <= distanceBetweenPoints)
+        double startingDistance = FilteredDistanceTravelled();
+        while (FilteredDistanceTravelled() - startingDistance <= distanceBetweenPoints)
         {
             drivetrain.Drive(90);
         }
@@ -193,6 +193,13 @@ public class AutoPathfinding extends RobotController {
         {
             moveSpeed.End((float) super.time, (float) distanceBetweenPoints);
         }
+    }
+
+    public double FilteredDistanceTravelled()
+    {
+        double rawDist = countsToMeters(drivetrain.topRight.getCurrentPosition(), countsPerRev, wheelCircumference);
+        drivetrain.encoderFilter.AddReading(rawDist);
+        return drivetrain.encoderFilter.GetAverage();
     }
 
     public void Pivot(float theta)

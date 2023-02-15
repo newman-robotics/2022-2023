@@ -46,6 +46,7 @@ class BaseComponent
 class LinearSlideController extends BaseComponent
 {
     private DcMotor slideMotor;
+    private MovingAverageFilter slideEncoderFilter;
     private RevTouchSensor touch;
     private float speed;
     private int startCounts = 0;
@@ -69,6 +70,7 @@ class LinearSlideController extends BaseComponent
         this.slideMotor = slideMotor;
         this.speed = speed;
         this.touch = touch;
+        slideEncoderFilter = new MovingAverageFilter(10);
     }
 
     // Takes in Gamepad input
@@ -138,7 +140,10 @@ class LinearSlideController extends BaseComponent
 
     public double CurrentPosition()
     {
-        return -RobotController.countsToMeters(slideMotor.getCurrentPosition() - startCounts, countsPerRev, pulleyCircumference);
+        // Apply Moving Average Filter to distance
+        double rawCalculatedPos = -RobotController.countsToMeters(slideMotor.getCurrentPosition() - startCounts, countsPerRev, pulleyCircumference);
+        slideEncoderFilter.AddReading(rawCalculatedPos);
+        return slideEncoderFilter.GetAverage();
     }
 }
 
@@ -147,6 +152,7 @@ class MechanumWheelController extends BaseComponent
 {
     private DcMotor topLeft;
     protected DcMotor topRight; // HAS ENCODER
+    protected MovingAverageFilter encoderFilter;
     private DcMotor bottomLeft;
     private DcMotor bottomRight;
     private float initialSpeed;
@@ -163,6 +169,7 @@ class MechanumWheelController extends BaseComponent
         bottomLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         this.bottomRight = bottomRight;
         bottomRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        encoderFilter = new MovingAverageFilter(10);
         this.initialSpeed = speed;
         currentSpeed = speed;
     }
