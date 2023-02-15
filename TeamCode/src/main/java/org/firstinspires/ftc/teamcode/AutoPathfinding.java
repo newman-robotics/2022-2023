@@ -183,7 +183,7 @@ public class AutoPathfinding extends RobotController {
             facingDirection = nextDirection;
 
             // Move
-            Move1Node();
+            MoveDist(distanceBetweenPoints);
 
             // Stop moving and set new current position
             currentPos = nextCoordinate;
@@ -191,7 +191,7 @@ public class AutoPathfinding extends RobotController {
     }
 
     int countOffset = 0; // Counts utilized to reposition the robot and are not counted towards distance travelled.
-    public void Move1Node()
+    public void MoveDist(double dist)
     {
         countOffset = 0;
 
@@ -203,7 +203,7 @@ public class AutoPathfinding extends RobotController {
 
         // Move a node's distance for 1 node
         double startingDistance = FilteredDistanceTravelled();
-        while (FilteredDistanceTravelled() - startingDistance <= distanceBetweenPoints)
+        while (FilteredDistanceTravelled() - startingDistance <= dist)
         {
             // Drive
             drivetrain.Drive(90);
@@ -225,7 +225,7 @@ public class AutoPathfinding extends RobotController {
         // Calibrate
         if (!moveSpeed.isCalibrated())
         {
-            moveSpeed.End((float) super.time, (float) distanceBetweenPoints);
+            moveSpeed.End((float) super.time, (float) dist);
         }
     }
 
