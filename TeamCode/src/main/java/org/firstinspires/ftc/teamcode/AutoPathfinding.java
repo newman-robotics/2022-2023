@@ -3,6 +3,10 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.teamcode.Pathfinding.BFS;
 import org.firstinspires.ftc.teamcode.Pathfinding.Coordinate;
 import org.firstinspires.ftc.teamcode.Pathfinding.FieldContainer;
@@ -50,6 +54,7 @@ public class AutoPathfinding extends RobotController {
     private SpeedCalibration moveSpeed; // m/s
     private SpeedCalibration pivotSpeed; // rad/s
 
+    private float angleOffset;
     private enum DIRECTIONS{
         UP,
         DOWN,
@@ -92,6 +97,13 @@ public class AutoPathfinding extends RobotController {
         return countsToMeters(counts, countsPerRev, circumference) * 4;
     }
 
+    // Degree bearing relative to initial bearing
+    public float getBearing()
+    {
+        Orientation angles = gyro.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+        return angles.firstAngle + angleOffset;
+    }
+
     // Radian angle travelled when pivoting
     public double angleTravelledRad(double t)
     {
@@ -112,6 +124,9 @@ public class AutoPathfinding extends RobotController {
         BNO055IMU.Parameters initParam = new BNO055IMU.Parameters();
         initParam.angleUnit = BNO055IMU.AngleUnit.RADIANS;
         gyro.initialize(initParam);
+
+        // Set up angle offset
+        angleOffset = Direction2Theta(facingDirection);
 
         waitForStart();
 
@@ -164,17 +179,22 @@ public class AutoPathfinding extends RobotController {
             telemetry.update();
             Pivot(thetaToTravel);
 
+            // Set new direction
+            facingDirection = nextDirection;
+
             // Move
             Move1Node();
 
             // Stop moving and set new current position
             currentPos = nextCoordinate;
-            facingDirection = nextDirection;
         }
     }
 
+    int countOffset = 0; // Counts utilized to reposition the robot and are not counted towards distance travelled.
     public void Move1Node()
     {
+        countOffset = 0;
+
         // Check for calibration data
         if (moveSpeed == null)
         {
@@ -185,7 +205,21 @@ public class AutoPathfinding extends RobotController {
         double startingDistance = FilteredDistanceTravelled();
         while (FilteredDistanceTravelled() - startingDistance <= distanceBetweenPoints)
         {
+            // Drive
             drivetrain.Drive(90);
+
+            // Check for angle inconsistencies
+            int startingCorrectionCount = drivetrain.topRight.getCurrentPosition();
+            double bearingDifference = Direction2Theta(facingDirection) - getBearing();
+            if (Math.abs(bearingDifference) > 0.5f)
+            {
+                // Stop drivetrain and correct angle
+                drivetrain.Reset();
+                Pivot((float) bearingDifference);
+
+                // Calculate count offset
+                countOffset += drivetrain.topRight.getCurrentPosition() - startingCorrectionCount;
+            }
         }
 
         // Calibrate
@@ -197,7 +231,7 @@ public class AutoPathfinding extends RobotController {
 
     public double FilteredDistanceTravelled()
     {
-        double rawDist = countsToMeters(drivetrain.topRight.getCurrentPosition(), countsPerRev, wheelCircumference);
+        double rawDist = countsToMeters(drivetrain.topRight.getCurrentPosition() - countOffset, countsPerRev, wheelCircumference);
         drivetrain.encoderFilter.AddReading(rawDist);
         return drivetrain.encoderFilter.GetAverage();
     }
