@@ -100,7 +100,7 @@ public class AutoPathfinding extends RobotController {
     // Degree bearing relative to initial bearing
     public float getBearing()
     {
-        Orientation angles = gyro.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+        Orientation angles = gyro.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES);
         return angles.firstAngle + angleOffset;
     }
 
