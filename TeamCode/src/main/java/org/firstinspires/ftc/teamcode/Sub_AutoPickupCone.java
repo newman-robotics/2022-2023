@@ -40,6 +40,9 @@ public class Sub_AutoPickupCone {
         {
             slide.getSlideMotor().setPower(0.5f);
         }
+        slide.StartMove(0);
+        while (!slide.atTarget())
+            slide.AutoUpdate();
 
         // Hit. Close grabber
         singleton.parentProcess.grabber.Update(0);
