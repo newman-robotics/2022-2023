@@ -62,7 +62,7 @@ class LinearSlideController extends BaseComponent
     private double pulleyCircumference = 0.112;
     private double countsPerRev = 537.7;
 
-    private boolean initializedAtBottom = false;
+    public boolean initializedAtBottom = false;
 
     // Constructor
     public LinearSlideController(DcMotor slideMotor, RevTouchSensor touch, float speed) {
@@ -71,6 +71,11 @@ class LinearSlideController extends BaseComponent
         this.speed = speed;
         this.touch = touch;
         slideEncoderFilter = new MovingAverageFilter(10);
+    }
+
+    public void AutoUpdate()
+    {
+        Update(null);
     }
 
     // Takes in Gamepad input
@@ -90,25 +95,29 @@ class LinearSlideController extends BaseComponent
             return;
         }
 
-        // Check for move input
-        if (inputDevice.dpad_up)
+        double offsetTargetHeight = targetHeight;
+        if (inputDevice == null)
         {
-            StartMove(3);
-        }else if (inputDevice.dpad_left)
-        {
-            StartMove(2);
-        }else if (inputDevice.dpad_right)
-        {
-            StartMove(1);
-        }else if (inputDevice.dpad_down)
-        {
-            StartMove(0);
-        }
+            // Check for move input
+            if (inputDevice.dpad_up)
+            {
+                StartMove(3);
+            }else if (inputDevice.dpad_left)
+            {
+                StartMove(2);
+            }else if (inputDevice.dpad_right)
+            {
+                StartMove(1);
+            }else if (inputDevice.dpad_down)
+            {
+                StartMove(0);
+            }
 
-        // Add joystick offset
-        double joystickOffsetFactor = 0.1f;
-        double joystickOffset = -inputDevice.right_stick_y * joystickOffsetFactor;
-        double offsetTargetHeight = targetHeight + joystickOffset;
+            // Add joystick offset
+            double joystickOffsetFactor = 0.1f;
+            double joystickOffset = -inputDevice.right_stick_y * joystickOffsetFactor;
+            offsetTargetHeight = targetHeight + joystickOffset;
+        }
 
         double difference = offsetTargetHeight - CurrentPosition();
         AddTelemetry("TARGET HEIGHT: ", String.valueOf(offsetTargetHeight));
@@ -144,6 +153,16 @@ class LinearSlideController extends BaseComponent
         double rawCalculatedPos = -RobotController.countsToMeters(slideMotor.getCurrentPosition() - startCounts, countsPerRev, pulleyCircumference);
         slideEncoderFilter.AddReading(rawCalculatedPos);
         return slideEncoderFilter.GetAverage();
+    }
+
+    public boolean atTarget()
+    {
+        return Math.abs(CurrentPosition() - targetHeight) < 0.05f;
+    }
+
+    public DcMotor getSlideMotor()
+    {
+        return slideMotor;
     }
 }
 
@@ -343,6 +362,11 @@ class Grabber extends BaseComponent
         AddTelemetry("Left Grabber", String.valueOf(lServo.getPosition()));
         AddTelemetry("Right Grabber", String.valueOf(rServo.getPosition()));
         AddTelemetry("Raw Input", String.valueOf(input));
+    }
+
+    public TouchSensor getTopTouch()
+    {
+        return topTouch;
     }
 }
 

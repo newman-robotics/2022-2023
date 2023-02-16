@@ -45,7 +45,9 @@ class SpeedCalibration{
 @Autonomous
 public class AutoPathfinding extends RobotController {
 
-    private double distanceBetweenPoints = 0.3048f; // in meters
+    // in meters
+    private double distanceBetweenPoints = 0.3048f;
+    public double getDistanceBetweenPoints(){ return distanceBetweenPoints; }
     private double countsPerRev = 537.7;
     private double wheelCircumference = 0.301593;
     private BNO055IMU gyro;
@@ -203,10 +205,10 @@ public class AutoPathfinding extends RobotController {
 
         // Move a node's distance for 1 node
         double startingDistance = FilteredDistanceTravelled();
-        while (FilteredDistanceTravelled() - startingDistance <= dist)
+        while (FilteredDistanceTravelled() - startingDistance <= Math.abs(dist))
         {
             // Drive
-            drivetrain.Drive(90);
+            drivetrain.Drive(dist > 0 ? 90 : 270);
 
             // Check for angle inconsistencies
             int startingCorrectionCount = drivetrain.topRight.getCurrentPosition();
