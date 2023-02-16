@@ -14,6 +14,7 @@ import java.util.Hashtable;
 public class ConeColorPipeline extends OpenCvPipeline {
 
     public Hashtable<String, Double> colorTotals = new Hashtable<>();
+    public native int findZone(int[] pixels);
     private Mat currentVisual;
 
     public String GetFace()
@@ -64,7 +65,7 @@ public class ConeColorPipeline extends OpenCvPipeline {
         colorTotals.put("BLUE", (double) 0);
 
         // Get split channels
-        Mat red = new Mat();
+        /*Mat red = new Mat();
         Core.extractChannel(input, red, 0);
         Mat green = new Mat();
         Core.extractChannel(input, green, 1);
@@ -74,9 +75,21 @@ public class ConeColorPipeline extends OpenCvPipeline {
         // Threshold each channel
         red = thresholdChannel(red);
         green = thresholdChannel(green);
-        blue = thresholdChannel(blue);
+        blue = thresholdChannel(blue);*/
 
         // Go through each pixel to get things
+        // Let's see if I can get this in C++...
+        int[] pixels = new int[(int)input.total()*input.channels()];
+        input.get(0, 0, pixels);
+        int foundZone = findZone(pixels);
+        if (foundZone == 0) {
+            colorTotals.put("RED", 1.0);
+        } else if (foundZone == 1) {
+            colorTotals.put("GREEN", 1.0);
+        } else if (foundZone == 2) {
+            colorTotals.put("BLUE", 1.0);
+        }
+        /*
         for (int y = 0; y < input.height(); y++) {
             for (int x = 0; x < input.width(); x++) {
                 // Get amounts
@@ -89,7 +102,7 @@ public class ConeColorPipeline extends OpenCvPipeline {
                 colorTotals.put("GREEN", colorTotals.get("GREEN") + greenAmount);
                 colorTotals.put("BLUE", colorTotals.get("BLUE") + blueAmount);
             }
-        }
+        }*/
     }
 
     public Mat thresholdChannel(Mat input)
