@@ -4,22 +4,25 @@ import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AngularVelocity;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.teamcode.RobotController;
+import org.opencv.core.Mat;
+
+import java.util.PriorityQueue;
 
 @Autonomous
 public class IMUTest extends RobotController {
 
     private BNO055IMU imu;
 
-    public float getBearing()
+    public double getBearing()
     {
-        Orientation angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES);
-        return angles.firstAngle;
+        double radBearing = imu.getAngularOrientation().firstAngle + (Math.PI);
+        return (radBearing * 180) / Math.PI;
     }
-
     @Override
     public void runOpMode() {
         imu = hardwareMap.get(BNO055IMU.class, "imu");
@@ -39,6 +42,7 @@ public class IMUTest extends RobotController {
             telemetry.addData("LINEAR ACCELERATION: ", imu.getLinearAcceleration());
             telemetry.addData("VELOCITY: ", imu.getVelocity());
             telemetry.addData("RELATIVE BEARING: ", getBearing());
+            telemetry.addData("ORIENTATION: ", imu.getAngularOrientation().toString());
             telemetry.update();
         }
     }

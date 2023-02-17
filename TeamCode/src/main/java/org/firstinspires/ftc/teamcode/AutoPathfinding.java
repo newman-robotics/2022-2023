@@ -56,8 +56,8 @@ public class AutoPathfinding extends RobotController {
     private SpeedCalibration moveSpeed; // m/s
     private SpeedCalibration pivotSpeed; // rad/s
 
-    private float angleOffset;
-    private enum DIRECTIONS{
+    private double angleOffset;
+    protected enum DIRECTIONS{
         UP,
         DOWN,
         LEFT,
@@ -66,8 +66,12 @@ public class AutoPathfinding extends RobotController {
 
     // (y, x) coordinate system
     private char[][] field;
-    private DIRECTIONS facingDirection;
-    private Coordinate currentPos;
+    protected DIRECTIONS facingDirection;
+    protected Coordinate currentPos;
+    private Sub_AutoDropCone sub_drop;
+    private Sub_AutoPickupCone sub_pickup;
+
+    protected Coordinate parkZone;
 
     public static float Direction2Theta(DIRECTIONS dir)
     {
@@ -91,6 +95,7 @@ public class AutoPathfinding extends RobotController {
     {
         facingDirection = DIRECTIONS.RIGHT;
         currentPos = new Coordinate(2, 0);
+        parkZone = new Coordinate(0,0);
     }
 
     // Distance travelled in straight line
@@ -100,10 +105,10 @@ public class AutoPathfinding extends RobotController {
     }
 
     // Degree bearing relative to initial bearing
-    public float getBearing()
+    public double getBearing()
     {
-        Orientation angles = gyro.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES);
-        return angles.firstAngle + angleOffset;
+        double radBearing = gyro.getAngularOrientation().firstAngle + (Math.PI);
+        return ((radBearing * 180) / Math.PI) + angleOffset;
     }
 
     // Radian angle travelled when pivoting
@@ -128,17 +133,21 @@ public class AutoPathfinding extends RobotController {
         gyro.initialize(initParam);
 
         // Set up angle offset
-        angleOffset = Direction2Theta(facingDirection);
+        angleOffset = getBearing() - Direction2Theta(facingDirection);
+
+        // Initialize sub-programs
+        sub_pickup = new Sub_AutoPickupCone(this);
+        sub_drop = new Sub_AutoDropCone(this);
 
         waitForStart();
 
-        // Calibration path
-        Coordinate[] path = BFS.FindPath(field, currentPos, new Coordinate(0, 4));
+        // Parking path
+        Coordinate[] path = BFS.FindPath(field, currentPos, parkZone);
         MovePath(path);
 
-        Coordinate[] timedPath = BFS.FindPath(field, new Coordinate(0, 4), new Coordinate(10, 4));
-        estimatedTime = EstimateTime(timedPath);
-        MovePath(timedPath);
+//        Coordinate[] timedPath = BFS.FindPath(field, new Coordinate(0, 4), new Coordinate(10, 4));
+//        estimatedTime = EstimateTime(timedPath);
+//        MovePath(timedPath);
     }
 
     void MovePath(Coordinate[] path)
@@ -211,17 +220,18 @@ public class AutoPathfinding extends RobotController {
             drivetrain.Drive(dist > 0 ? 90 : 270);
 
             // Check for angle inconsistencies
-            int startingCorrectionCount = drivetrain.topRight.getCurrentPosition();
-            double bearingDifference = Direction2Theta(facingDirection) - getBearing();
-            if (Math.abs(bearingDifference) > 0.5f)
-            {
-                // Stop drivetrain and correct angle
-                drivetrain.Reset();
-                Pivot((float) bearingDifference);
-
-                // Calculate count offset
-                countOffset += drivetrain.topRight.getCurrentPosition() - startingCorrectionCount;
-            }
+//            int startingCorrectionCount = drivetrain.topRight.getCurrentPosition();
+//            double bearingDifference = Direction2Theta(facingDirection) - getBearing();
+//            telemetry.addData("Bearing Difference: ", bearingDifference);
+//            if (Math.abs(bearingDifference) > 10f)
+//            {
+//                // Stop drivetrain and correct angle
+//                drivetrain.Reset();
+//                Pivot((float) bearingDifference);
+//
+//                // Calculate count offset
+//                countOffset += drivetrain.topRight.getCurrentPosition() - startingCorrectionCount;
+//            }
         }
 
         // Calibrate

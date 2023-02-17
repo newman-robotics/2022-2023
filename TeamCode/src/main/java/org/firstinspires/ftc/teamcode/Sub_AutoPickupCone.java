@@ -30,7 +30,7 @@ public class Sub_AutoPickupCone {
         while (!slide.atTarget())
             slide.AutoUpdate();
 
-        singleton.parentProcess.grabber.Update(1); // Open Grabber Fully
+        singleton.parentProcess.grabber.Update(0); // Open Grabber Fully
 
         // Move forward 1/2 a node
         singleton.parentProcess.MoveDist(singleton.parentProcess.getDistanceBetweenPoints() / 2);
@@ -40,12 +40,14 @@ public class Sub_AutoPickupCone {
         {
             slide.getSlideMotor().setPower(0.5f);
         }
-        slide.StartMove(0);
-        while (!slide.atTarget())
-            slide.AutoUpdate();
 
         // Hit. Close grabber
-        singleton.parentProcess.grabber.Update(0);
+        singleton.parentProcess.grabber.Update(1);
+
+        // Move slide to max height
+        slide.StartMove(3);
+        while (!slide.atTarget())
+            slide.AutoUpdate();
 
         // Move back 1/2 a node
         singleton.parentProcess.MoveDist(-singleton.parentProcess.getDistanceBetweenPoints() / 2);
