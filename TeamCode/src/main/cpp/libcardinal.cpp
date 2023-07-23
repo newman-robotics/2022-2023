@@ -864,7 +864,7 @@ do automatic exception checking before they run, so the programmer
 must manually check for exceptions. This is to be fixed in a later
 update, but for now, don't expect altenv functions to check for
 Java errors and try to translate them into C++ errors.
-TODO: fix it
+TODO: add an altenv exception_check function
 
 
 Now, in theory what you could do is create a C++ class that wraps a

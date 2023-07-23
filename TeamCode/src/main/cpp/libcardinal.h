@@ -15,15 +15,17 @@ namespace libcardinal {
 
     class TelemetryStream;
 
-    void libcardinal_setenv(JNIEnv *);
+    void exception_check();
 
-    JNIEnv *libcardinal_getenv();
+    void setenv(JNIEnv *);
 
-    void libcardinal_setvm(JavaVM *);
+    JNIEnv *getenv();
 
-    JavaVM *libcardinal_getvm();
+    void setvm(JavaVM *);
 
-    void libcardinal_terminate();
+    JavaVM *getvm();
+
+    void terminate();
 
     jobject new_instance(const char *, const char *, const jvalue *);
 
