@@ -33,6 +33,8 @@ namespace libcardinal {
 
     jvalue get_field(jobject, const char *, const char *);
 
+    jvalue get_static_field(jclass, const char *, const char *);
+
     template<typename>
     jarray get_array_field(jobject, const char *, const char *);
 
@@ -61,6 +63,8 @@ namespace libcardinal {
     jobject altenv_alloc_instance(JNIEnv *, const char *);
 
     jvalue altenv_get_field(JNIEnv *, jobject, const char *, const char *);
+
+    jvalue altenv_get_static_field(JNIEnv *, jobject, const char *, const char *);
 
     template<typename>
     jarray altenv_get_array_field(JNIEnv *, jobject, const char *, const char *);
